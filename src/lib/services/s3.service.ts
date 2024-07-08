@@ -25,7 +25,8 @@ export class S3Service {
   async upload(params: TS3Params & { Body: PutObjectRequest['Body'], ACL?: PutObjectRequest['ACL'], ContentType?: PutObjectRequest['ContentType'] }): Promise<IS3UploadResponse> {
     // todo: sanitize filename here before uploading
     const resolvedParams = this.addDefaultBucket(params);
-    const { ETag } = await this.upload(resolvedParams);
+    const command = new PutObjectCommand(this.addDefaultBucket(resolvedParams));
+    const { ETag } = await this.s3.send(command);
     const Location = resolveUrl(this.config.AWS_REGION, params);
 
     return {
