@@ -1,6 +1,6 @@
 {
     "name": "@onivoro/server-aws-s3",
-    "version": "3.0.2",
+    "version": "3.0.3",
     "repository": {
         "url": "git+https://github.com/onivoro/server-aws-s3.git"
     },

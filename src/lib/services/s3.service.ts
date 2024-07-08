@@ -27,7 +27,7 @@ export class S3Service {
     const resolvedParams = this.addDefaultBucket(params);
     const command = new PutObjectCommand(this.addDefaultBucket(resolvedParams));
     const { ETag } = await this.s3.send(command);
-    const Location = resolveUrl(this.config.AWS_REGION, params);
+    const Location = resolveUrl(this.config.AWS_REGION, resolvedParams);
 
     return {
       Location,
