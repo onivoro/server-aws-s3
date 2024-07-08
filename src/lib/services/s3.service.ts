@@ -1,8 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { S3 } from 'aws-sdk';
+import { DeleteObjectCommand, DeleteObjectsCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, PutObjectCommandOutput, PutObjectRequest, S3, S3Client } from '@aws-sdk/client-s3';
 import { ServerAwsS3Config } from '../classes/server-aws-s3-config.class';
 import { IS3UploadResponse } from '../interfaces/s3-upload-response.interface';
-import { ListObjectsV2Request } from 'aws-sdk/clients/s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 export type TS3Params = {
   Key: string,
@@ -19,20 +19,27 @@ export type TS3ObjectsParams = Omit<TS3Params, 'Key'> & {
 
 @Injectable()
 export class S3Service {
-  constructor(private config: ServerAwsS3Config, private s3: S3) { }
+  constructor(private config: ServerAwsS3Config, private s3: S3Client) { }
 
-  async upload(params: TS3Params & { Body: S3.PutObjectRequest['Body'], ACL?: S3.PutObjectRequest['ACL'], ContentType?: S3.PutObjectRequest['ContentType'] }): Promise<IS3UploadResponse> {
+  async upload(params: TS3Params & { Body: PutObjectRequest['Body'], ACL?: PutObjectRequest['ACL'], ContentType?: PutObjectRequest['ContentType'] }): Promise<PutObjectCommandOutput> {
     // todo: sanitize filename here before uploading
-    return await this.s3.upload(this.addDefaultBucket(params)).promise();
+    const command = new PutObjectCommand(this.addDefaultBucket(params));
+    const output = await this.s3.send(command);
+
+    return output;
   }
 
-  async uploadPublic(params: TS3Params & { Body: S3.PutObjectRequest['Body'], ContentType?: S3.PutObjectRequest['ContentType'] }): Promise<IS3UploadResponse> {
+  async uploadPublic(params: TS3Params & { Body: PutObjectRequest['Body'], ContentType?: PutObjectRequest['ContentType'] }): Promise<PutObjectCommandOutput> {
     // todo: sanitize filename here before uploading
-    return await this.s3.upload({ ...this.addDefaultBucket(params), ACL: 'public-read' }).promise();
+    return await this.upload({ ...this.addDefaultBucket(params), ACL: 'public-read' });
   }
 
-  async getPresignedUrl(params: TS3Params & { Expires: number, ResponseContentDisposition: string }) {
-    return await this.s3.getSignedUrlPromise('getObject', this.addDefaultBucket(params));
+  async getPresignedUrl(params: TS3Params & { Expires: number, ResponseContentDisposition: string }): Promise<string> {
+    const { Bucket, Key } = this.addDefaultBucket(params);
+    const command = new GetObjectCommand({ Bucket, Key });
+    const url = await getSignedUrl(this.s3, command, { expiresIn: params.Expires });
+
+    return url;
   }
 
   async getFile(params: TS3Params) {
@@ -40,7 +47,9 @@ export class S3Service {
       throw new BadRequestException(`${S3Service.name}.${S3Service.prototype.getFile.name} requires a valid S3 key`)
     }
 
-    return await this.s3.getObject(this.addDefaultBucket(params)).promise();
+    const { Bucket, Key } = this.addDefaultBucket(params);
+    const command = new GetObjectCommand({ Bucket, Key });
+    return await this.s3.send(command);
   }
 
   async delete(params: TS3Params) {
@@ -48,7 +57,10 @@ export class S3Service {
       throw new BadRequestException(`${S3Service.name}.${S3Service.prototype.delete.name} requires a valid S3 key`)
     }
 
-    return await this.s3.deleteObject(this.addDefaultBucket(params)).promise();
+    const command = new DeleteObjectCommand(this.addDefaultBucket(params));
+    const data = await this.s3.send(command);
+
+    return data;
   }
 
   async deleteByPrefix(params: TS3PrefixParams) {
@@ -56,7 +68,8 @@ export class S3Service {
       throw new BadRequestException(`${S3Service.name}.${S3Service.prototype.deleteByPrefix.name} requires a valid S3 prefix`)
     }
 
-    const data = await this.s3.listObjectsV2(this.addDefaultBucket(params)).promise();
+    const command = new ListObjectsV2Command(this.addDefaultBucket(params));
+    const data = await this.s3.send(command);
 
     const Objects = data.Contents.map(({ Key }) => ({ Key }));
 
@@ -68,11 +81,16 @@ export class S3Service {
       throw new BadRequestException(`${S3Service.name}.${S3Service.prototype.deleteByPrefix.name} requires an array of valid S3 keys`)
     }
 
-    const { Objects } = params;
+    const { Objects, Bucket } = this.addDefaultBucket(params);
 
     if (Objects.length) {
-      const lee = this.addDefaultBucket({ Delete: { Objects } });
-      await this.s3.deleteObjects(lee).promise();
+
+      const command = new DeleteObjectsCommand({
+        Bucket,
+        Delete: { Objects }
+      });
+
+      return await this.s3.send(command);
     }
   }
 

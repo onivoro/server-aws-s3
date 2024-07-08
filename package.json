@@ -1,6 +1,6 @@
 {
     "name": "@onivoro/server-aws-s3",
-    "version": "0.0.12",
+    "version": "3.0.0",
     "repository": {
         "url": "git+https://github.com/onivoro/server-aws-s3.git"
     },
@@ -40,8 +40,9 @@
         "npm": "10.2.4"
     },
     "dependencies": {
+        "@aws-sdk/client-s3": "^3.609.0",
+        "@aws-sdk/s3-request-presigner": "^3.609.0",
         "@nestjs/common": "^10.3.3",
-        "@onivoro/server-common": "^0.1.1",
-        "aws-sdk": "^2.1571.0"
+        "@onivoro/server-common": "^0.1.1"
     }
 }
