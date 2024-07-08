@@ -1,8 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { DeleteObjectCommand, DeleteObjectsCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, PutObjectCommandOutput, PutObjectRequest, S3, S3Client } from '@aws-sdk/client-s3';
 import { ServerAwsS3Config } from '../classes/server-aws-s3-config.class';
-import { IS3UploadResponse } from '../interfaces/s3-upload-response.interface';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { IS3UploadResponse } from '../interfaces/s3-upload-response.interface';
+import { resolveUrl } from '../functions/resolve-url.function';
 
 export type TS3Params = {
   Key: string,
@@ -21,17 +22,21 @@ export type TS3ObjectsParams = Omit<TS3Params, 'Key'> & {
 export class S3Service {
   constructor(private config: ServerAwsS3Config, private s3: S3Client) { }
 
-  async upload(params: TS3Params & { Body: PutObjectRequest['Body'], ACL?: PutObjectRequest['ACL'], ContentType?: PutObjectRequest['ContentType'] }): Promise<PutObjectCommandOutput> {
+  async upload(params: TS3Params & { Body: PutObjectRequest['Body'], ACL?: PutObjectRequest['ACL'], ContentType?: PutObjectRequest['ContentType'] }): Promise<IS3UploadResponse> {
     // todo: sanitize filename here before uploading
-    const command = new PutObjectCommand(this.addDefaultBucket(params));
-    const output = await this.s3.send(command);
+    const resolvedParams = this.addDefaultBucket(params);
+    const { ETag } = await this.upload(resolvedParams);
+    const Location = resolveUrl(this.config.AWS_REGION, params);
 
-    return output;
+    return {
+      Location,
+      ...resolvedParams,
+      ETag,
+    };
   }
 
-  async uploadPublic(params: TS3Params & { Body: PutObjectRequest['Body'], ContentType?: PutObjectRequest['ContentType'] }): Promise<PutObjectCommandOutput> {
-    // todo: sanitize filename here before uploading
-    return await this.upload({ ...this.addDefaultBucket(params), ACL: 'public-read' });
+  async uploadPublic(params: TS3Params & { Body: PutObjectRequest['Body'], ContentType?: PutObjectRequest['ContentType'] }): Promise<IS3UploadResponse> {
+    return await this.upload({ ...params, ACL: 'public-read' });
   }
 
   async getPresignedUrl(params: TS3Params & { Expires: number, ResponseContentDisposition: string }): Promise<string> {
