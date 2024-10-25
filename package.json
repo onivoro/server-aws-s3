@@ -30,19 +30,19 @@
         "module": "commonjs"
     },
     "devDependencies": {
-        "@onivoro/cli": "*",
+        "@onivoro/cli": "^22.0.3",
         "@types/jest": "*",
-        "@types/node": "18.19.1",
+        "@types/node": "22.7.9",
         "typescript": "*"
     },
     "engines": {
-        "node": "18.19.1",
-        "npm": "10.2.4"
+        "node": "22.10.0",
+        "npm": "10.9.0"
     },
     "dependencies": {
-        "@aws-sdk/client-s3": "^3.609.0",
-        "@aws-sdk/s3-request-presigner": "^3.609.0",
-        "@nestjs/common": "^10.3.3",
-        "@onivoro/server-common": "^0.1.1"
+        "@aws-sdk/client-s3": "^3.679.0",
+        "@aws-sdk/s3-request-presigner": "^3.679.0",
+        "@nestjs/common": "^10.4.6",
+        "@onivoro/server-common": "^22.0.0"
     }
 }
