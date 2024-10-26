@@ -30,9 +30,9 @@
         "module": "commonjs"
     },
     "devDependencies": {
-        "@onivoro/cli": "^22.0.3",
+        "@onivoro/cli": "^22.0.4",
         "@types/jest": "*",
-        "@types/node": "22.7.9",
+        "@types/node": "22.8.1",
         "typescript": "*"
     },
     "engines": {
@@ -43,6 +43,6 @@
         "@aws-sdk/client-s3": "^3.679.0",
         "@aws-sdk/s3-request-presigner": "^3.679.0",
         "@nestjs/common": "^10.4.6",
-        "@onivoro/server-common": "^22.0.0"
+        "@onivoro/server-common": "^22.0.1"
     }
 }
