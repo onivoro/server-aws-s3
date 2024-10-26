@@ -11,5 +11,7 @@
     "**/*spec.ts",
     "**/*.snap"
   ],
-  "compilerOptions": {}
+  "compilerOptions": {
+    "strictNullChecks": false
+  }
 }
