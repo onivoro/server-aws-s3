@@ -7,22 +7,27 @@ import { ServerAwsS3Config } from './classes/server-aws-s3-config.class';
 @Module({})
 export class ServerAwsS3Module {
   static configure(config: ServerAwsS3Config) {
+    const s3Client = new S3Client({
+      region: config.AWS_REGION,
+      credentials: config.NODE_ENV === 'production'
+        ? undefined
+        : {
+          accessKeyId: config.AWS_ACCESS_KEY_ID,
+          secretAccessKey: config.AWS_SECRET_ACCESS_KEY
+        }
+    });
     return moduleFactory({
       module: ServerAwsS3Module,
       providers: [
         {
+          provide: S3Client,
+          useValue: s3Client,
+        },
+        {
           provide: S3Service,
           useFactory: () => new S3Service(
             config,
-            new S3Client({
-              region: config.AWS_REGION,
-              credentials: config.NODE_ENV === 'production'
-                ? undefined
-                : {
-                  accessKeyId: config.AWS_ACCESS_KEY_ID,
-                  secretAccessKey: config.AWS_SECRET_ACCESS_KEY
-                }
-            })
+            s3Client
           )
         }
       ]
